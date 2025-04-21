@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+    }
+
+    .navbar {
+      background-color: #007BFF;
+      padding: 15px 30px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+
+    .container {
+      height: calc(100vh - 60px);
+      display: flex;
+      flex-direction: column;
+      padding: 10px 30px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 22px;
+    }
+
+    .cards {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      flex: 1;
+      background-color: #f1f1f1;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .card h3 {
+      margin-bottom: 5px;
+      font-size: 16px;
+    }
+
+    .card p {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .main-section {
+      flex: 1;
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .left-panel, .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    canvas {
+      background-color: #fff;
+      border-radius: 8px;
+    }
+
+    .rate {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .month-tabs {
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 2px solid #007BFF;
+      margin-bottom: 20px;
+    }
+
+    .month-tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #007BFF;
+      border: 1px solid transparent;
+      border-radius: 5px;
+    }
+
+    .month-tab.active {
+      background-color: #007BFF;
+      color: white;
+      border: 1px solid #007BFF;
+    }
+
+    .month-tab:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div><strong>Welcome, {{ username }}</strong></div>
+  <div>
+    <a href="{{ url_for('form') }}">Add Data</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+</div>
+
+<div class="container">
+  <h2>Your Financial Dashboard</h2>
+
+  <div class="month-tabs" id="monthTabs">
+    {% for month in ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+      <div class="month-tab {% if loop.first %}active{% endif %}" data-month="{{ month }}">{{ month }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="cards">
+    <div class="card">
+        <h3>Total Income</h3>
+        <p>${{ "{:,.2f}".format(total_income) }}</p>
+    </div>
+    <div class="card">
+        <h3>Total Expenses</h3>
+        <p>${{ "{:,.2f}".format(total_expenses) }}</p>
+    </div>
+    <div class="card">
+        <h3>Savings</h3>
+        <p>${{ "{:,.2f}".format(total_income - total_expenses) }}</p>
+    </div>
+    <div class="card">
+        <h3>Total Hours Worked</h3>
+        <p>{{ total_hours }}</p>
+    </div>
+  </div>
+
+  <div class="main-section">
+    <div class="left-panel">
+      <div class="section-title">Income by Month</div>
+      <canvas id="incomeLineChart" height="260"></canvas>
+
+      <div class="section-title">Average Hourly Rate</div>
+      <div class="rate">${{ avg_hourly_rate }}</div>
+    </div>
+
+    <div class="right-panel">
+      <div class="section-title">Expenses by Category</div>
+      <canvas id="expensesChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js and plugin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+  // Expenses Bar Chart
+  try {
+    const ctx = document.getElementById('expensesChart').getContext('2d');
+    const labels = {{ expenses_by_category.keys()|list|tojson }};
+    const dataValues = {{ expenses_by_category.values()|list|tojson }};
+    const barColors = [
+      '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8',
+      '#6610f2', '#e83e8c', '#fd7e14', '#20c997', '#6f42c1'
+    ];
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Expenses by Category',
+          data: dataValues,
+          backgroundColor: barColors.slice(0, labels.length),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toFixed(2)}`
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: v => `$${v.toFixed(2)}`,
+            font: { weight: 'bold', size: 12 },
+            color: '#333'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: v => `$${v}`
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  } catch (e) {
+    console.error("Bar chart error:", e);
+  }
+
+  // Income Line Chart
+  try {
+    const lineCtx = document.getElementById('incomeLineChart').getContext('2d');
+    const incomeLabels = {{ income_by_month.keys()|list|tojson }};
+    const incomeData = {{ income_by_month.values()|list|tojson }};
+
+    new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: incomeLabels,
+        datasets: [{
+          label: 'Income by Month',
+          data: incomeData,
+          borderColor: '#007bff',
+          backgroundColor: '#007bff',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toFixed(2)}`
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: v => `$${v.toFixed(2)}`,
+            font: { weight: 'bold', size: 12 },
+            color: '#333'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: v => `$${v}`
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  } catch (e) {
+    console.error("Line chart error:", e);
+  }
+
+  // Month tab logic
+  const monthTabs = document.querySelectorAll('.month-tab');
+  monthTabs.forEach(tab => {
+    tab.addEventListener('click', function () {
+      monthTabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const selectedMonth = this.dataset.month;
+      updateChartsForMonth(selectedMonth);
+    });
+  });
+
+  function updateChartsForMonth(month) {
+    console.log('Updating charts for:', month);
+    // You can implement month-based filtering here
+  }
+</script>
+
+</body>
+</html>

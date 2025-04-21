@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Income & Expense Entry</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Navigation Bar Styling */
+        .navbar {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 15px;
+            font-weight: bold;
+        }
+
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+        .nav-left a {
+            font-size: 18px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Main Form Styling */
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h2, h3 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007BFF;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .toggle-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .toggle-buttons button {
+            width: auto;
+            margin: 5px;
+        }
+    </style>
+    <script>
+        function showExpenseForm() {
+            document.getElementById('expense-section').style.display = 'block';
+        }
+
+        function hideExpenseForm() {
+            document.getElementById('expense-section').style.display = 'none';
+        }
+    </script>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-left">
+        <a href="{{ url_for('form') }}">Home</a>
+    </div>
+    <div class="nav-right">
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- Form Section -->
+<div class="container">
+    <h2>Welcome, {{ username }}</h2>
+
+    <!-- Income Form -->
+    <h3>Add Income</h3>
+    <form action="{{ url_for('submit') }}" method="POST">
+        <label for="date">Date</label>
+        <input type="date" name="date" required>
+
+        <label for="income">Income ($)</label>
+        <input type="number" name="income" step="1" required>
+
+        <label for="hours">Hours Worked</label>
+        <input type="number" name="hours" step="1" required>
+
+        <button type="submit">Add Income</button>
+    </form>
+
+    <!-- Ask for Expense -->
+    <div class="toggle-buttons">
+        <p>Do you want to add an expense as well?</p>
+        <button onclick="showExpenseForm()">Yes</button>
+        <button onclick="hideExpenseForm()">No</button>
+    </div>
+
+    <!-- Expense Form -->
+    <div id="expense-section" class="hidden">
+        <h3>Add Expense</h3>
+        <form action="{{ url_for('add_expense') }}" method="POST">
+            <label for="date">Date</label>
+            <input type="date" name="date" required>
+
+            <label for="category">Category</label>
+            <select name="category" required>
+                <option value="">-- Select Category --</option>
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Education">Education</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Health">Health</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="description">Description</label>
+            <input type="text" name="description">
+
+            <label for="amount">Amount ($)</label>
+            <input type="number" name="amount" step="1" required>
+
+            <label for="payment_method">Payment Method</label>
+            <select name="payment_method">
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+
+            <button type="submit">Add Expense</button>
+        </form>
+    </div>
+
+    <a class="back-link" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+</div>
+
+</body>
+</html>
